@@ -81,10 +81,10 @@ dist/WeChatOneDriveTool.exe
 *.temp
 
 # .VSCodeCounter
-.vscodecounter/
+.VSCodeCounter/
 
 # .claude
-.claude
+.claude/
 
 # .dev/
 .dev/
