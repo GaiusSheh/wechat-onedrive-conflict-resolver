@@ -79,3 +79,12 @@ dist/WeChatOneDriveTool.exe
 # Temporary files
 *.tmp
 *.temp
+
+# .VSCodeCounter
+.vscodecounter/
+
+# .claude
+.claude
+
+# .dev/
+.dev/
