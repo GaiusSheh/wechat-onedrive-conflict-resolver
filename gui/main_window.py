@@ -169,13 +169,13 @@ class MainWindow:
         # 设置窗口关闭事件
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
+        # 设置文件日志系统（移到线程启动之前，确保日志系统就绪）
+        self._setup_file_logging()
+        
         # 启动状态更新线程
         self.start_status_update_thread()
         self.start_system_status_thread()
         self.start_auto_monitor_thread()
-        
-        # 设置文件日志系统
-        self._setup_file_logging()
         
         # 根据配置决定是否启用性能监控
         try:
@@ -1944,6 +1944,7 @@ class MainWindow:
     def start_auto_monitor_thread(self):
         """启动自动监控线程"""
         self.log_message("[自动监控]start_auto_monitor_thread()方法被调用", "INFO")
+        self.log_message("[BUG修复]日志系统已就绪，开始启动监控线程", "INFO")
         
         def monitor_loop():
             last_scheduled_check = None  # 记录最后一次检查定时触发的时间
