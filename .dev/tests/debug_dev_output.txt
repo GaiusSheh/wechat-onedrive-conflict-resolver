@@ -1,0 +1,48 @@
+[性能] GUI更新-空闲时间更新 耗时过长: 0.588秒
+=== 图标设置调试开始 ===
+运行环境: 开发环境
+
+--- 图标文件检查 ---
+图标: app_256x256.ico
+  路径: C:\Users\Shi_Y\OneDrive\Codes\Wechat-tools\gui/resources/icons/app_256x256.ico
+  存在: True
+  大小: 73137 字节
+
+图标: app_128x128.ico
+  路径: C:\Users\Shi_Y\OneDrive\Codes\Wechat-tools\gui/resources/icons/app_128x128.ico
+  存在: True
+  大小: 32489 字节
+
+图标: app_64x64.ico
+  路径: C:\Users\Shi_Y\OneDrive\Codes\Wechat-tools\gui/resources/icons/app_64x64.ico
+  存在: True
+  大小: 15799 字节
+
+图标: app.ico
+  路径: C:\Users\Shi_Y\OneDrive\Codes\Wechat-tools\gui/resources/icons/app.ico
+  存在: True
+  大小: 40554 字节
+
+可用图标数量: 4
+
+=== 阶段1：iconbitmap设置（窗口标题栏） ===
+
+--- 尝试iconbitmap设置: app_256x256.ico ---
+正在调用 self.root.iconbitmap()...
+[SUCCESS] iconbitmap(app_256x256.ico) 设置成功！
+
+=== 阶段2：iconphoto设置（任务栏图标） ===
+PNG路径: C:\Users\Shi_Y\OneDrive\Codes\Wechat-tools\gui/resources/downloads/main_transp_bg.png
+PNG存在: True
+PNG大小: 80929 字节
+正在加载原始PNG图像...
+原始PNG尺寸: (512, 512)
+正在尝试 64x64 尺寸...
+临时文件: C:\Users\Shi_Y\AppData\Local\Temp\tmpu1xfj585.png
+正在调用 self.root.iconphoto(64x64)...
+[SUCCESS] iconphoto(64x64) 设置成功！
+
+=== 双重图标设置总结 ===
+iconbitmap（窗口）: 成功
+iconphoto（任务栏）: 成功
+整体结果: 成功

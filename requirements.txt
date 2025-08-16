@@ -1,0 +1,33 @@
+# 微信OneDrive冲突解决工具 - Python依赖包
+
+# 进程管理 - 用于检测和控制微信、OneDrive进程
+psutil>=5.9.0
+
+# 任务调度 - 用于定时触发同步流程  
+schedule>=1.2.0
+
+# GUI界面依赖 (推荐安装，用于现代化图形界面)
+# 现代化UI主题库
+ttkbootstrap>=1.14.0
+# 系统托盘支持
+pystray>=0.19.0
+# 图像处理 (托盘图标)
+Pillow>=9.0.0
+# HTTP请求库 (用于下载图标)
+requests>=2.32.0
+
+# 注意：以下包是Python标准库，无需单独安装：
+# - tkinter (GUI框架，Python 3.x标准库)
+# - ctypes (Windows API调用)
+# - winreg (Windows注册表访问)
+# - subprocess (子进程管理)
+# - json (JSON配置文件处理)
+# - logging (日志记录)
+# - threading (多线程支持)
+# - time, datetime (时间处理)
+# - os, sys (系统接口)
+# - signal (信号处理)
+
+# 安装说明：
+# 核心功能: pip install psutil schedule
+# 完整功能: pip install -r requirements.txt
