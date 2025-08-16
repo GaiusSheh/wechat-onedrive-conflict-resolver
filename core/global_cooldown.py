@@ -50,8 +50,18 @@ class GlobalCooldownManager:
             }
             with open(self.state_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
+            # 添加调试信息确认保存成功
+            try:
+                from core.logger_helper import logger
+                logger.debug(f"全局冷却状态已保存到: {self.state_file}")
+            except:
+                print(f"全局冷却状态已保存到: {self.state_file}")
         except Exception as e:
-            # logger.warning(f"保存全局冷却状态失败: {e}")
+            try:
+                from core.logger_helper import logger
+                logger.warning(f"保存全局冷却状态失败: {e}")
+            except:
+                print(f"保存全局冷却状态失败: {e}")
             pass
     
     def is_in_cooldown(self, cooldown_minutes: float) -> bool:
@@ -81,7 +91,13 @@ class GlobalCooldownManager:
         """更新最后触发时间"""
         self.last_trigger_time = datetime.now()
         self.save_state()
-        # logger.info(f"全局冷却时间已更新: {trigger_type} 触发于 {self.last_trigger_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        # 添加调试日志以确认更新成功
+        try:
+            from core.logger_helper import logger
+            logger.info(f"全局冷却时间已更新: {trigger_type} 触发于 {self.last_trigger_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        except:
+            # 如果logger不可用，至少打印到控制台
+            print(f"全局冷却时间已更新: {trigger_type} 触发于 {self.last_trigger_time.strftime('%Y-%m-%d %H:%M:%S')}")
     
     def reset_cooldown(self):
         """重置冷却时间（手动重置功能）"""

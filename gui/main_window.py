@@ -1550,7 +1550,7 @@ class MainWindow:
                         
                         # 更新全局冷却时间
                         update_global_cooldown("手动触发")
-                        self.log_message("全局冷却时间已更新", "INFO")
+                        self.log_message("全局冷却时间已更新 - 手动触发", "INFO")
                         
                         # 立即更新GUI显示的冷却状态
                         self.update_stats_labels()
@@ -1560,6 +1560,8 @@ class MainWindow:
                         
                     except Exception as cooldown_error:
                         self.log_message(f"更新全局冷却状态失败: {cooldown_error}", "WARNING")
+                        import traceback
+                        self.log_message(f"详细错误信息: {traceback.format_exc()}", "DEBUG")
                         
                 else:
                     self.log_message("同步流程执行失败", "ERROR")
@@ -2025,6 +2027,8 @@ class MainWindow:
                                                         self.log_message(f"[定时触发]更新全局冷却失败: {cooldown_error}", "WARNING")
                                                 else:
                                                     self.log_message("[定时触发]定时触发同步执行失败", "ERROR")
+                                                    # 更新失败计数
+                                                    self.sync_error_count += 1
                                                     
                                                     # 失败后也要更新冷却（防止频繁重试）
                                                     try:
@@ -2037,8 +2041,12 @@ class MainWindow:
                                                         
                                             except Exception as sync_error:
                                                 self.log_message(f"[定时触发]同步执行过程中出错: {sync_error}", "ERROR")
+                                                # 异常情况也要更新失败计数
+                                                self.sync_error_count += 1
                                             finally:
                                                 self.is_running_sync = False
+                                                # 确保在finally中更新统计显示
+                                                self.update_stats_labels()
                                         
                                         # 启动定时同步线程
                                         import threading
@@ -2094,6 +2102,9 @@ class MainWindow:
                                             success = sync_workflow.run_full_sync_workflow_gui(self.log_message)
                                             if success:
                                                 self.log_message("[自动触发]空闲触发同步执行成功", "SUCCESS")
+                                                # 更新成功计数和同步时间
+                                                self.sync_success_count += 1
+                                                self.last_sync_time = datetime.now()
                                                 try:
                                                     from core.global_cooldown import update_global_cooldown
                                                     update_global_cooldown("空闲触发")
@@ -2103,10 +2114,16 @@ class MainWindow:
                                                     pass
                                             else:
                                                 self.log_message("[自动触发]空闲触发同步执行失败", "ERROR")
+                                                # 更新失败计数
+                                                self.sync_error_count += 1
                                         except Exception as e:
                                             self.log_message(f"[自动触发]同步过程出错: {e}", "ERROR")
+                                            # 异常情况也要更新失败计数
+                                            self.sync_error_count += 1
                                         finally:
                                             self.is_running_sync = False
+                                            # 确保在finally中更新统计显示
+                                            self.update_stats_labels()
                                     
                                     import threading
                                     sync_thread = threading.Thread(target=simple_auto_sync, daemon=True)
@@ -2135,17 +2152,12 @@ class MainWindow:
         # has_method = hasattr(self.config, 'is_idle_trigger_enabled')
         # is_enabled = self.config.is_idle_trigger_enabled() if has_method else False
         
-        # NEW VERSION: 2025-08-09 - 检查静置触发和定时触发
-        has_idle_method = hasattr(self.config, 'is_idle_trigger_enabled')
-        idle_enabled = self.config.is_idle_trigger_enabled() if has_idle_method else False
-        
-        has_scheduled_method = hasattr(self.config, 'is_scheduled_trigger_enabled') 
-        scheduled_enabled = self.config.is_scheduled_trigger_enabled() if has_scheduled_method else False
+        # 检查静置触发和定时触发
+        idle_enabled = self.config.is_idle_trigger_enabled()
+        scheduled_enabled = self.config.is_scheduled_trigger_enabled()
         
         # 只要任一触发方式启用，就启动监控线程
         any_trigger_enabled = idle_enabled or scheduled_enabled
-        
-        self.log_message(f"[自动监控]检查启动条件: idle={idle_enabled}, scheduled={scheduled_enabled}, any={any_trigger_enabled}", "INFO")
         
         if any_trigger_enabled:
             thread = threading.Thread(target=monitor_loop, daemon=True)

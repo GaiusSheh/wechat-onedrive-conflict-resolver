@@ -45,7 +45,7 @@ class ConfigManager:
         return {
             "_comment_idle": "静置触发：当系统空闲指定时间后自动执行同步",
             "idle_trigger": {
-                "enabled": False,
+                "enabled": True,
                 "_comment_enabled": "是否启用静置触发 (true/false)",
                 "idle_minutes": 10,
                 "_comment_idle_minutes": "静置多少分钟后触发同步 (建议5-30分钟)",
