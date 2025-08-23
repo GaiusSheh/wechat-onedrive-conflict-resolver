@@ -169,8 +169,7 @@ class MainWindow:
         # 设置窗口关闭事件
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
-        # 设置文件日志系统（移到线程启动之前，确保日志系统就绪）
-        self._setup_file_logging()
+        # 移除独立文件日志系统 - 统一使用main日志系统
         
         # 启动状态更新线程
         self.start_status_update_thread()
@@ -635,7 +634,7 @@ class MainWindow:
                     bootstyle = color_map.get(level, 'info')
                     
                     # 直接调用GUI显示，但不写入文件（unified logger已处理文件写入）
-                    current_time = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
                     formatted_message = f"[{current_time}] {level}: {message}\n"
                     
                     try:
@@ -1647,11 +1646,10 @@ class MainWindow:
         if not self._should_log_level(level):
             return
             
-        current_time = datetime.now().strftime("%H:%M:%S.%f")[:-3]  # 精确到毫秒
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]  # 包含年月日，精确到毫秒
         formatted_message = f"[{current_time}] {level}: {message}\n"
         
-        # 同时写入文件和GUI
-        self._write_to_file(formatted_message)
+        # 移除独立文件日志写入 - 统一日志系统已处理文件记录
         
         # NEW VERSION: 2025-08-08 - 线程安全的日志GUI更新
         try:
@@ -2241,83 +2239,7 @@ class MainWindow:
             self.log_message(f"执行GUI更新出错: {e}", "ERROR")
             self._gui_update_pending = False
     
-    def _setup_file_logging(self):
-        """设置文件日志系统"""
-        try:
-            # 创建logs目录
-            self.logs_dir = "logs"
-            os.makedirs(self.logs_dir, exist_ok=True)
-            
-            # 获取当前日期时间作为日志文件名 (精确到时分秒)
-            current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            self.current_log_file = os.path.join(self.logs_dir, f"{current_datetime}.log")
-            
-            # 写入启动日志
-            startup_time = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-            self._write_to_file(f"[{startup_time}] INFO: 程序启动，开始记录日志\n")
-            
-            # 执行日志文件轮转清理
-            self._rotate_log_files()
-            
-            logger.info(f"文件日志已启用: {self.current_log_file}")
-            
-        except Exception as e:
-            # 如果文件日志设置失败，只在控制台显示错误，不中断程序
-            logger.error(f"文件日志设置失败: {e}")
-    
-    def _write_to_file(self, message):
-        """写入日志到文件"""
-        try:
-            # 检查是否启用日志记录
-            if not hasattr(self.config, 'config') or not self.config.config.get('logging', {}).get('enabled', True):
-                return
-            
-            # 确保日志文件存在
-            if not hasattr(self, 'current_log_file'):
-                return
-                
-            # 写入日志
-            with open(self.current_log_file, 'a', encoding='utf-8') as f:
-                f.write(message)
-                f.flush()  # 确保立即写入
-                
-        except Exception as e:
-            # 文件写入失败时不中断程序运行
-            logger.error(f"写入日志文件失败: {e}")
-    
-    def _rotate_log_files(self):
-        """日志文件轮转清理"""
-        try:
-            if not os.path.exists(self.logs_dir):
-                return
-            
-            # 获取配置的最大文件数
-            max_files = 10  # 默认保留10个文件
-            if hasattr(self.config, 'config'):
-                max_files = self.config.config.get('logging', {}).get('max_log_files', 10)
-            
-            # 获取所有.log文件，按修改时间排序
-            log_files = []
-            for filename in os.listdir(self.logs_dir):
-                if filename.endswith('.log'):
-                    filepath = os.path.join(self.logs_dir, filename)
-                    mtime = os.path.getmtime(filepath)
-                    log_files.append((filepath, mtime))
-            
-            # 按时间排序（最新的在前）
-            log_files.sort(key=lambda x: x[1], reverse=True)
-            
-            # 删除超出数量限制的旧文件
-            if len(log_files) > max_files:
-                for filepath, _ in log_files[max_files:]:
-                    try:
-                        os.remove(filepath)
-                        logger.info(f"已删除旧日志文件: {os.path.basename(filepath)}")
-                    except Exception as e:
-                        logger.error(f"删除旧日志文件失败 {filepath}: {e}")
-            
-        except Exception as e:
-            logger.error(f"日志轮转清理失败: {e}")
+    # 独立日志系统已移除 - 统一使用main日志系统
     
     def debug_button_heights_with_retry(self, retry_count=0):
         """带重试的按钮高度调试 - 可通过 DEBUG_LAYOUT 开关控制"""
@@ -2570,11 +2492,8 @@ class MainWindow:
         try:
             self.log_message("开始执行程序退出流程", "INFO")
             
-            # 记录程序关闭日志
-            if hasattr(self, '_write_to_file'):
-                close_time = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-                self._write_to_file(f"[{close_time}] INFO: 程序正常关闭\n")
-                self.log_message("已写入关闭日志", "DEBUG")
+            # 记录程序关闭日志到统一日志系统
+            logger.info("程序正常关闭")
             
             # 清理系统托盘
             if self.system_tray:

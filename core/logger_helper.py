@@ -94,11 +94,12 @@ class LoggerHelper:
         # 创建格式器
         console_formatter = logging.Formatter(
             '%(asctime)s - %(levelname)s - %(message)s',
-            datefmt='%H:%M:%S'
+            datefmt='%Y-%m-%d %H:%M:%S'
         )
         
         file_formatter = logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s'
+            '%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
         )
         
         # 控制台输出（开发环境）
@@ -128,7 +129,8 @@ class LoggerHelper:
     def setup_debug_loggers(self):
         """设置专门调试日志系统"""
         file_formatter = logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s'
+            '%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
         )
         
         base_log_dir = self._get_base_directory() / "logs"
