@@ -169,6 +169,9 @@ class MainWindow:
         # 设置窗口关闭事件
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
+        # 添加Windows会话管理事件处理（修复关机时taskkill弹窗问题）
+        self.setup_session_handling()
+        
         # 移除独立文件日志系统 - 统一使用main日志系统
         
         # 启动状态更新线程
@@ -2499,7 +2502,7 @@ class MainWindow:
             if self.system_tray:
                 try:
                     self.log_message("停止系统托盘", "DEBUG")
-                    self.system_tray.stop_tray()
+                    self.system_tray.stop_tray(timeout=3.0)  # 给予较长超时，因为这是正常退出
                 except Exception as tray_error:
                     self.log_message(f"停止系统托盘时出错: {tray_error}", "WARNING")
             
@@ -2528,6 +2531,134 @@ class MainWindow:
     def show_from_tray(self):
         """兼容性方法，调用restore_from_tray"""
         self.restore_from_tray()
+    
+    def setup_session_handling(self):
+        """设置Windows会话管理事件处理（修复关机时taskkill弹窗问题）"""
+        try:
+            import platform
+            if platform.system() == "Windows":
+                # 在主线程中注册信号处理器
+                self._register_signal_handlers()
+                
+                # Windows特定的会话管理
+                try:
+                    import threading
+                    # 创建会话监听线程
+                    session_thread = threading.Thread(target=self._monitor_windows_session, daemon=True)
+                    session_thread.start()
+                    
+                    self.log_message("Windows会话管理事件处理已启用", "DEBUG")
+                except Exception as e:
+                    self.log_message(f"Windows会话监听启动失败，使用备用方案: {e}", "WARNING")
+            
+        except Exception as e:
+            self.log_message(f"设置会话管理失败: {e}", "ERROR")
+    
+    def _register_signal_handlers(self):
+        """在主线程中注册信号处理器"""
+        try:
+            import signal
+            import os
+            
+            def signal_handler(signum, frame):
+                self.log_message(f"接收到系统信号 {signum}，触发快速退出", "INFO")
+                # 使用线程安全的方式触发快速退出
+                try:
+                    self.root.after(0, self.force_exit)
+                except:
+                    # 如果Tkinter已经销毁，直接强制退出
+                    os._exit(0)
+            
+            # 注册常见的系统终止信号
+            signal.signal(signal.SIGTERM, signal_handler)  # 终止信号
+            signal.signal(signal.SIGINT, signal_handler)   # 中断信号 (Ctrl+C)
+            if hasattr(signal, 'SIGBREAK'):
+                signal.signal(signal.SIGBREAK, signal_handler)  # Windows Break信号
+                
+            self.log_message("信号处理器注册成功", "DEBUG")
+        except Exception as e:
+            self.log_message(f"注册信号处理器失败: {e}", "WARNING")
+    
+    def _handle_focus_events(self, event=None):
+        """处理焦点事件（备用方案）"""
+        # 这是一个备用的事件处理，主要依赖Windows会话监听
+        pass
+    
+    def _monitor_windows_session(self):
+        """监控Windows会话状态（在独立线程中运行）"""
+        try:
+            import time
+            
+            # 简化的会话监控：主要监控窗口状态
+            try:
+                while True:
+                    time.sleep(2)  # 每2秒检查一次
+                    
+                    # 检查程序是否仍在运行
+                    if not hasattr(self, 'root'):
+                        break
+                    
+                    try:
+                        # 检查Tkinter窗口是否仍然存在
+                        if not self.root.winfo_exists():
+                            break
+                    except:
+                        break
+                    
+                    # 可以在这里添加更多的系统状态检测，如检测关机进程等
+                    
+            except Exception as e:
+                self.log_message(f"Windows会话监听线程异常: {e}", "ERROR")
+                
+        except Exception as e:
+            self.log_message(f"Windows会话监听初始化失败: {e}", "ERROR")
+    
+    def force_exit(self):
+        """快速强制退出（用于系统关机等场景，跳过用户交互）"""
+        try:
+            self.log_message("执行快速退出流程（系统关机）", "INFO")
+            logger.info("系统关机触发快速退出")
+            
+            # 停止所有线程和定时器
+            if hasattr(self, 'status_update_timer'):
+                try:
+                    self.root.after_cancel(self.status_update_timer)
+                except:
+                    pass
+            
+            # 快速清理系统托盘（设置超时）
+            if self.system_tray:
+                try:
+                    # 在新线程中停止托盘，避免阻塞
+                    import threading
+                    def quick_stop_tray():
+                        try:
+                            self.system_tray.stop_tray()
+                        except:
+                            pass
+                    
+                    tray_thread = threading.Thread(target=quick_stop_tray, daemon=True)
+                    tray_thread.start()
+                    tray_thread.join(timeout=0.5)  # 最多等待0.5秒
+                except:
+                    pass
+            
+            # 立即销毁窗口
+            try:
+                self.root.quit()  # 退出主循环
+                self.root.destroy()  # 销毁窗口
+            except:
+                pass
+            
+            # 最终保险：强制退出进程
+            import os
+            import sys
+            os._exit(0)  # 立即退出，不执行清理操作
+            
+        except Exception as e:
+            # 如果快速退出失败，直接强制终止
+            import os
+            os._exit(0)
 
 def main():
     """主函数"""

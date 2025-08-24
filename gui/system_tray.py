@@ -190,15 +190,44 @@ class SystemTray:
             self.is_running = False
             return False
     
-    def stop_tray(self):
-        """停止系统托盘"""
+    def stop_tray(self, timeout=2.0):
+        """停止系统托盘（支持超时控制，修复关机时的阻塞问题）"""
         if self.icon and self.is_running:
             try:
-                self.icon.stop()
+                logger.info("正在停止系统托盘...")
+                
+                # 设置停止标志
                 self.is_running = False
-                logger.info("系统托盘已停止")
+                
+                # 使用线程来停止托盘，避免阻塞
+                import threading
+                import time
+                
+                def stop_icon():
+                    try:
+                        if self.icon:
+                            self.icon.stop()
+                    except Exception as e:
+                        logger.warning(f"托盘图标停止时出错: {e}")
+                
+                # 启动停止线程
+                stop_thread = threading.Thread(target=stop_icon, daemon=True)
+                stop_thread.start()
+                
+                # 等待停止完成，但不超过指定超时时间
+                stop_thread.join(timeout=timeout)
+                
+                if stop_thread.is_alive():
+                    logger.warning(f"系统托盘停止超时({timeout}秒)，强制继续")
+                else:
+                    logger.info("系统托盘已成功停止")
+                    
             except Exception as e:
                 logger.error(f"停止系统托盘出错: {e}")
+            finally:
+                # 确保状态被清理
+                self.is_running = False
+                self.icon = None
     
     def update_icon_status(self, status="normal"):
         """更新托盘图标状态"""
@@ -296,9 +325,22 @@ class SystemTray:
     def quit_application(self, icon=None, item=None):
         """退出应用程序"""
         if self.main_window:
-            self.main_window.exit_application()
+            # 检查是否是系统关机场景，如果是则使用快速退出
+            try:
+                import psutil
+                # 简单检测：如果系统负载很高，可能是关机场景
+                cpu_percent = psutil.cpu_percent(interval=0.1)
+                if cpu_percent > 80:
+                    # 系统负载高，可能是关机，使用快速退出
+                    self.main_window.force_exit()
+                else:
+                    # 正常用户操作，使用标准退出
+                    self.main_window.exit_application()
+            except:
+                # 如果检测失败，使用标准退出
+                self.main_window.exit_application()
         else:
-            self.stop_tray()
+            self.stop_tray(timeout=1.0)  # 缩短托盘停止超时时间
 
 # 安装指南
 def check_tray_dependencies():
